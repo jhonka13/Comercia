@@ -152,7 +152,9 @@ function OtpInput({
       {value.map((digit, i) => (
         <input
           key={i}
-          ref={(el) => (refs.current[i] = el)}
+          ref={(el) => {
+            refs.current[i] = el;
+          }}
           value={digit}
           onChange={(e) => setDigit(i, e.target.value.replace(/\D/g, "").slice(-1))}
           onKeyDown={(e) => handleKeyDown(i, e)}
@@ -513,7 +515,7 @@ export default function AuthLayout() {
   };
 
   // --- Login ---
-  const handleLogin = async (email: string, password: string, remember: boolean) => {
+  const handleLogin = async (email: string, password: string, _remember: boolean) => {
     setLoading(true);
     setError(null);
     const { error: authError } = await supabase.auth.signInWithPassword({
@@ -525,7 +527,7 @@ export default function AuthLayout() {
       setError("Correo o contraseña incorrectos.");
       return;
     }
-    // remember: controla si la sesión persiste solo en memoria o en localStorage;
+    // _remember: controla si la sesión persiste solo en memoria o en localStorage;
     // se resuelve en la config de createClient (persistSession) si se necesita
     // distinguir por usuario.
     const context = await fetchUserContext();
@@ -538,10 +540,6 @@ export default function AuthLayout() {
   };
 
   // --- Registro ---
-  // El código de verificación se envía por WhatsApp: requiere configurar en
-  // Supabase Auth un proveedor SMS con soporte WhatsApp (ej. Twilio) y usar
-  // signInWithOtp con `phone` en vez de `email`. Aquí se deja el flujo de
-  // email + OTP como base; cambia el channel según tu proveedor.
   const handleRegister = async (
     name: string,
     businessName: string,
@@ -560,9 +558,6 @@ export default function AuthLayout() {
       setError(authError.message);
       return;
     }
-    // El tenant y la fila en `users` se crean recién en handleVerify, porque
-    // create_tenant_and_owner() necesita auth.uid() con sesión activa, y esa
-    // sesión no existe hasta que el código de verificación se confirma.
     setPendingEmail(email);
     setPendingFullName(name);
     setPendingBusinessName(businessName);
@@ -598,10 +593,6 @@ export default function AuthLayout() {
       return;
     }
 
-    // Solo aplica en el flujo de registro (crea tenant + usuario dueño).
-    // En el flujo de "recuperar contraseña" este paso se omite: el usuario
-    // ya tiene tenant, y la vista de verificación ahí actuaría distinto
-    // (ej. redirigir a un formulario de nueva contraseña).
     if (pendingBusinessName) {
       const { error: rpcError } = await supabase.rpc("create_tenant_and_owner", {
         p_business_name: pendingBusinessName,
